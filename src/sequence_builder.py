@@ -1,5 +1,3 @@
-import pandas as pd
-
 def build_sequences(df):
 
     sequences = (
