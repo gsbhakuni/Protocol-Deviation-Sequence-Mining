@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from pathlib import Path
+from collections import Counter
 import sys
 ROOT_DIR = Path(__file__).resolve().parent.parent
 sys.path.append(str(ROOT_DIR))
@@ -16,7 +17,7 @@ df = load_and_clean_data("data/dataset.csv")
 #Retrieve all the sequences from the dataset
 sequences = build_sequences(df)
 
-
+#Title of dashboard
 st.title("Protocol Deviation Sequence Mining Dashboard")
 st.markdown(
     """
@@ -26,6 +27,18 @@ st.markdown(
     """
 )
 
+#Support Slider
+support = st.sidebar.slider(
+    "Minimum Support",
+    min_value=50,
+    max_value=3000,
+    value=100,
+    step=10
+)
+patterns = mine_patterns(sequences, min_support=support)
+
+
+#Tabs to divide dashboard
 tab1, tab2, tab3 = st.tabs(
     [
         "Overview",
@@ -34,32 +47,43 @@ tab1, tab2, tab3 = st.tabs(
     ]
 )
 
-support = st.sidebar.slider(
-    "Minimum Support",
-    min_value=50,
-    max_value=3000,
-    value=100,
-    step=10
-)
-
-patterns = mine_patterns(sequences, min_support=support)
 
 #Find the patterns that leads to deviation
 deviation_patterns = get_deviation_patterns(patterns)
 total_deviations = df[df['deviation_flag'] == 1]['patient_id'].nunique()
 
+
 #Sort the patterns according to their support
 deviation_patterns = sort_patterns(deviation_patterns)
+
 
 #Add support percentage to the data
 deviation_patterns = add_support_percentage(deviation_patterns, len(sequences))
 
+
+#Create a table of deviation patterns
 table = pd.DataFrame(deviation_patterns, columns=['Support', 'Support Percentage', 'Pattern'])
 table["Pattern"] = table["Pattern"].apply(
     lambda x: " → ".join(x)
 )
+
+
+#Lengths of diffrent patterns leading to deviation
 pattern_lengths = [len(pattern) for _,_,pattern in deviation_patterns]
 length_df = pd.DataFrame(pattern_lengths, columns=["Lengths"])
+
+
+#Calculating the most occuring events that leads to protocol deviation
+event_counter = Counter()
+for support, support_percentage, pattern in deviation_patterns:
+    for event in deviation_patterns[:-1]:
+        event_counter[event] += support
+top_events = event_counter.most_common(10)
+risk_df = pd.DataFrame(
+    top_events,
+    columns=["Event", "Score"]
+)
+
 
 with tab1:
 
@@ -127,7 +151,8 @@ with tab2:
     st.bar_chart(length_df["Lengths"].value_counts())
 
     #Top Risk Events
-
+    st.subheader("Top Risk Events")
+    st.bar_chart(risk_df.set_index("Event"))
 
 with tab3:
 
