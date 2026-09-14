@@ -20,7 +20,7 @@ sequences = build_sequences(df)
 st.title("Protocol Deviation Sequence Mining Dashboard")
 
 
-min_support = st.sidebar.slider(
+support = st.sidebar.slider(
     "Minimum Support",
     min_value=50,
     max_value=500,
@@ -29,7 +29,8 @@ min_support = st.sidebar.slider(
 )
 
 #Find all the patterns using PrefixSpan
-patterns = mine_patterns(sequences, min_support=min_support)
+st.write("Current Support: ", support)
+patterns = mine_patterns(sequences, min_support=support)
 
 #Find the patterns that leads to deviation
 deviation_patterns = get_deviation_patterns(patterns)
@@ -76,8 +77,21 @@ table["Pattern"] = table["Pattern"].apply(
 pattern_lengths = [len(patterns) for _,_,patterns in deviation_patterns]
 length_df = pd.DataFrame(pattern_lengths, columns=["Lengths"])
 
-st.subheader("Pattern Length Distribution")
-st.bar_chart(length_df["Lengths"].value_counts())
-
 st.subheader("Top Protocol Deviation Patterns")
 st.dataframe(table.head(20), use_container_width=True)
+
+severity_counts = (
+    df[df["deviation_flag"] == 1]
+    ["deviation_severity"]
+    .value_counts()
+)
+
+st.subheader("Severity Distribution Chart")
+st.bar_chart(severity_counts)
+
+st.subheader("Site-wise Deviation Analysis")
+site_deviation = df[df['deviation_flag'] == 1]["site_id"].value_counts()
+st.bar_chart(site_deviation)
+
+st.subheader("Pattern Length Distribution")
+st.bar_chart(length_df["Lengths"].value_counts())
