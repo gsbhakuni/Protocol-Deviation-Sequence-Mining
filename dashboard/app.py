@@ -18,24 +18,25 @@ df = load_and_clean_data("data/dataset.csv")
 sequences = build_sequences(df)
 
 #Title of dashboard
-st.title("Protocol Deviation Sequence Mining Dashboard")
-st.markdown(
-    """
-    Discover frequent event sequences leading to
-    protocol deviations in clinical trial records
-    using PrefixSpan sequential pattern mining.
-    """
+st.set_page_config(
+    page_title="Protocol Deviation Mining",
+    page_icon="📊",
+    layout="wide"
+)
+st.title("📊 Protocol Deviation Sequence Mining Dashboard")
+st.caption(
+    "Discover frequent event pathways leading to protocol deviations using PrefixSpan sequential pattern mining."
 )
 
 #Support Slider
-support = st.sidebar.slider(
+mini_support = st.sidebar.slider(
     "Minimum Support",
     min_value=50,
     max_value=3000,
     value=100,
     step=10
 )
-patterns = mine_patterns(sequences, min_support=support)
+patterns = mine_patterns(sequences, min_support=mini_support)
 
 
 #Tabs to divide dashboard
@@ -75,8 +76,8 @@ length_df = pd.DataFrame(pattern_lengths, columns=["Lengths"])
 
 #Calculating the most occuring events that leads to protocol deviation
 event_counter = Counter()
-for support, support_percentage, pattern in deviation_patterns:
-    for event in deviation_patterns[:-1]:
+for support, percentage, pattern in deviation_patterns:
+    for event in pattern[:-1]:
         event_counter[event] += support
 top_events = event_counter.most_common(10)
 risk_df = pd.DataFrame(
@@ -86,29 +87,29 @@ risk_df = pd.DataFrame(
 
 
 with tab1:
-
-    #KPI cards
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.metric(
-            "Total Patients",
-            len(sequences)
-        )
-    with col2:
-        st.metric(
-            "Total Events",
-            len(df)
-        )
-    with col3:
-        st.metric(
-            "Deviation Patients",
-            total_deviations
-        )
-    with col4:
-        st.metric(
-            "Deviation Patterns",
-            len(deviation_patterns)
-        )
+    with st.container(border=True):
+        #KPI cards
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric(
+                "Total Patients",
+                len(sequences)
+            )
+        with col2:
+            st.metric(
+                "Total Events",
+                len(df)
+            )
+        with col3:
+            st.metric(
+                "Deviation Patients",
+                total_deviations
+            )
+        with col4:
+            st.metric(
+                "Deviation Patterns",
+                len(deviation_patterns)
+            )
 
     #Severity Distribution
     severity_counts = (
@@ -123,11 +124,12 @@ with tab1:
     st.subheader("Site-wise Deviation Analysis")
     site_deviation = df[df['deviation_flag'] == 1]["site_id"].value_counts()
     st.bar_chart(site_deviation)
+    with st.container(border=True):
+        #Key Insights
+        st.subheader("Key Insights")
+        top_pattern = deviation_patterns[0]
+        st.info(
 
-    #Key Insights
-    st.subheader("Key Insights")
-    top_pattern = deviation_patterns[0]
-    st.info(
         f"""Most common deviation pathway: {' → '.join(top_pattern[2])}
 
         Support: {top_pattern[0]}
@@ -135,7 +137,7 @@ with tab1:
     )
 
 with tab2:
-    st.write("Current Support: ", support)
+    st.write("Current Support: ", mini_support)
 
     # st.subheader("Pattern Search")
     search = st.text_input("Search Pattern")
@@ -162,10 +164,20 @@ with tab3:
         df["patient_id"].unique()
     )
 
-    patient_events = (
-        df[df["patient_id"] == selected_patient]
-        .sort_values("timestamp")
-    )
+    patient_df = df[df["patient_id"] == selected_patient]
 
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.metric("Events", len(patient_df))
+    with col2:
+        st.metric("Deviation", "Yes" if patient_df['deviation_flag'].max() else "No")
+    with col3:
+        st.metric("Site", patient_df['site_id'].iloc[0])
+
+    patient_events = (patient_df.sort_values("timestamp"))
     for event in patient_events["event"]:
-        st.write("➡️", event)
+        if event == "Protocol Deviation":
+            st.error(event)
+        else:
+            st.success(event)
