@@ -28,6 +28,8 @@ st.caption(
     "Discover frequent event pathways leading to protocol deviations using PrefixSpan sequential pattern mining."
 )
 
+st.sidebar.title("📊 Protocol Deviation Sequence Mining Dashboard")
+
 #Support Slider
 mini_support = st.sidebar.slider(
     "Minimum Support",
@@ -40,13 +42,16 @@ patterns = mine_patterns(sequences, min_support=mini_support)
 
 
 #Tabs to divide dashboard
-tab1, tab2, tab3 = st.tabs(
-    [
-        "Overview",
-        "Pattern Mining",
-        "Sequence Explorer"
-    ]
-)
+# tab1, tab2, tab3 = st.tabs(
+#     [
+#         "Overview",
+#         "Pattern Mining",
+#         "Sequence Explorer"
+#     ]
+# )
+
+
+page = st.sidebar.radio("Navigate", ["Overview", "Pattern Mining", "Sequence Explorer"])
 
 
 #Find the patterns that leads to deviation
@@ -85,8 +90,7 @@ risk_df = pd.DataFrame(
     columns=["Event", "Score"]
 )
 
-
-with tab1:
+if page == "Overview":
     with st.container(border=True):
         #KPI cards
         col1, col2, col3, col4 = st.columns(4)
@@ -117,13 +121,20 @@ with tab1:
         ["deviation_severity"]
         .value_counts()
     )
-    st.subheader("Severity Distribution Chart")
-    st.bar_chart(severity_counts)
-
-    #Site-wise Distribution
-    st.subheader("Site-wise Deviation Analysis")
     site_deviation = df[df['deviation_flag'] == 1]["site_id"].value_counts()
-    st.bar_chart(site_deviation)
+
+    graph1, graph2 = st.tabs(
+        [
+            "Severity Distribution",
+            "Site Analysis"
+        ]
+    )
+    with graph1:
+        st.bar_chart(severity_counts)
+
+    with graph2:
+        st.bar_chart(site_deviation)
+
     with st.container(border=True):
         #Key Insights
         st.subheader("Key Insights")
@@ -136,7 +147,7 @@ with tab1:
         """
     )
 
-with tab2:
+elif page == "Pattern Mining":
     st.write("Current Support: ", mini_support)
 
     # st.subheader("Pattern Search")
@@ -156,7 +167,7 @@ with tab2:
     st.subheader("Top Risk Events")
     st.bar_chart(risk_df.set_index("Event"))
 
-with tab3:
+elif page == "Sequence Explorer":
 
     st.subheader("Patient Journey Viewer")
     selected_patient = st.selectbox(
@@ -181,3 +192,5 @@ with tab3:
             st.error(event)
         else:
             st.success(event)
+
+
