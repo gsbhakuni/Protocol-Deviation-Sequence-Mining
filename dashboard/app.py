@@ -132,16 +132,16 @@ if page == "Overview":
     with graph1:
         st.subheader("Severity Distribution")
         st.caption(
-            "Number of deviation-flagged records by severity. Each bar represents "
-            "how many records are classified as Minor, Major, or Critical."
+            "This chart shows how many deviation events fall into each severity level. "
+            "The taller the bar, the more records were classified as Minor, Major, or Critical."
         )
         st.bar_chart(severity_counts)
 
     with graph2:
         st.subheader("Deviation Records by Site")
         st.caption(
-            "Number of deviation-flagged records at each site. These are raw counts, "
-            "not rates adjusted for the number of patients or records at each site."
+            "This graph compares the number of deviation-flagged records across different sites. "
+            "It helps identify which sites have higher volumes of protocol deviations in raw counts."
         )
         st.bar_chart(site_deviation)
 
@@ -160,26 +160,49 @@ if page == "Overview":
 elif page == "Pattern Mining":
     st.write("Current Support: ", mini_support)
 
+    tab1, tab2 = st.tabs(
+        [
+            "Search Protocol",
+            "Top Risk Events"
+        ]
+    )
     # st.subheader("Pattern Search")
-    search = st.text_input("Search Pattern")
-    if search:
-        table = table[table["Pattern"].str.contains(search, case=False)]
+    with tab1:
 
-    #Top Patterns Table
-    st.subheader("Top Protocol Deviation Patterns")
-    st.dataframe(table.head(20), use_container_width=True)
+        search = st.text_input("Search Pattern")
+        if search:
+            table = table[table["Pattern"].str.contains(search, case=False)]
 
-    #Pattern Length Distribution
-    st.subheader("Pattern Length Distribution")
-    st.bar_chart(length_df["Lengths"].value_counts())
+        #Top Patterns Table
+        st.subheader("Top Protocol Deviation Patterns")
+        st.dataframe(table.head(20), use_container_width=True)
 
-    #Top Risk Events
-    st.subheader("Top Risk Events")
-    st.bar_chart(risk_df.set_index("Event"))
+        table['Lengths'] = table['Pattern'].str.split('→').str.len()
+        #Pattern Length Distribution
+        st.subheader("Pattern Length Distribution")
+        st.caption(
+            "This chart shows how many deviation patterns contain each sequence length. "
+            "It helps reveal whether the most common risk pathways are short and simple or longer, more complex event chains."
+        )
+        st.bar_chart(table["Lengths"].value_counts())
+
+    with tab2:
+
+        #Top Risk Events
+        st.subheader("Top Risk Events")
+        st.caption(
+            "This chart ranks the events that most often appear before or alongside a protocol deviation. "
+            "A higher score means the event is more frequently involved in high-risk pathways, making it a stronger warning signal."
+        )
+        st.bar_chart(risk_df.set_index("Event"))
 
 elif page == "Sequence Explorer":
 
     st.subheader("Patient Journey Viewer")
+    st.caption(
+        "Explore a patient's chronological event history to review how protocol deviations appear within the broader treatment timeline."
+    )
+
     selected_patient = st.selectbox(
         "Select Patient",
         df["patient_id"].unique()
