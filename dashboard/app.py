@@ -130,9 +130,19 @@ if page == "Overview":
         ]
     )
     with graph1:
+        st.subheader("Severity Distribution")
+        st.caption(
+            "Number of deviation-flagged records by severity. Each bar represents "
+            "how many records are classified as Minor, Major, or Critical."
+        )
         st.bar_chart(severity_counts)
 
     with graph2:
+        st.subheader("Deviation Records by Site")
+        st.caption(
+            "Number of deviation-flagged records at each site. These are raw counts, "
+            "not rates adjusted for the number of patients or records at each site."
+        )
         st.bar_chart(site_deviation)
 
     with st.container(border=True):
@@ -192,5 +202,4 @@ elif page == "Sequence Explorer":
             st.error(event)
         else:
             st.success(event)
-
 
