@@ -84,3 +84,5 @@ uvicorn==0.51.0
 watchdog==6.0.0
 wcwidth==0.7.0
 websockets==16.1.1
+fastapi>=0.115
+uvicorn>=0.30
